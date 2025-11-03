@@ -28,7 +28,7 @@ spec:
                 - runcrons
               env:
                 - name: DJANGO_ALLOWED_HOSTS
-                  value: {{ .Values.django.settings.allowedHosts | quote }}
+                  value: "{{ .Values.global.domain }} localhost 127.0.0.1 0.0.0.0 app nginx qfieldcloud 10.244.0.0/16"
                 - name: DJANGO_SETTINGS_MODULE
                   value: {{ .Values.django.settings.settingsModule | quote }}
                 - name: SECRET_KEY
@@ -68,7 +68,7 @@ spec:
                 - name: MINIO_BROWSER_PORT
                   value: {{ .Values.django.storage.minioBrowserPort | quote }}
                 - name: STORAGES
-                  value: {{ .Values.django.storage.storagesConfig | toJson | quote }}
+                  value: {{ include "qfieldcloud.storageConfig" . | quote }}
                 - name: STORAGES_PROJECT_DEFAULT_STORAGE
                   value: {{ .Values.django.storage.projectDefaultStorage | quote }}
                 - name: GEODB_HOST
@@ -99,7 +99,7 @@ spec:
                 - name: QFIELDCLOUD_QGIS_IMAGE_NAME
                   value: {{ .Values.qgis.image.repository }}:{{ .Values.qgis.image.tag }}
                 - name: QFIELDCLOUD_HOST
-                  value: {{ (index .Values.ingress.hosts 0).host | quote }}
+                  value: {{ include "qfieldcloud.domain" . | quote }}
                 - name: QFIELDCLOUD_WORKER_QFIELDCLOUD_URL
                   value: {{ .Values.django.settings.workerQfieldcloudUrl | quote }}
               resources:

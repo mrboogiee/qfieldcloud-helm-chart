@@ -59,4 +59,54 @@ Create the name of the service account to use
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{/*
+Build storage configuration with conditional region_name
+*/}}
+{{- define "qfieldcloud.storageConfig" -}}
+{{- $storages := dict -}}
+{{- if eq .Values.django.storage.type "s3" -}}
+{{- $options := dict 
+  "bucket_name" .Values.django.storage.bucketName
+  "endpoint_url" .Values.django.storage.endpointUrl
+  "custom_domain" (default nil .Values.django.storage.customDomain)
+  "file_overwrite" false
+  "object_parameters" (dict)
+  "default_acl" "private"
+-}}
+{{- if .Values.django.storage.regionName -}}
+{{- $_ := set $options "region_name" .Values.django.storage.regionName -}}
+{{- end -}}
+{{- $defaultStorage := dict 
+  "BACKEND" "qfieldcloud.filestorage.backend.QfcS3Boto3Storage"
+  "OPTIONS" $options
+  "QFC_IS_LEGACY" false
+-}}
+{{- $_ := set $storages "default" $defaultStorage -}}
+{{- else if .Values.django.storage.storagesConfig -}}
+{{- $storages = deepCopy .Values.django.storage.storagesConfig -}}
+{{- range $key, $storage := $storages -}}
+{{- if hasKey $storage "OPTIONS" -}}
+{{- $options := $storage.OPTIONS -}}
+{{- if and (hasKey $options "region_name") (eq $options.region_name "") -}}
+{{- $_ := unset $options "region_name" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $storages | toJson -}}
+{{- end }}
+
+{{/*
+Get the domain from global.domain or first ingress host as fallback
+*/}}
+{{- define "qfieldcloud.domain" -}}
+{{- if .Values.global.domain -}}
+{{- .Values.global.domain -}}
+{{- else if .Values.ingress.hosts -}}
+{{- (index .Values.ingress.hosts 0).host -}}
+{{- else -}}
+{{- "localhost" -}}
+{{- end -}}
 {{- end }} 

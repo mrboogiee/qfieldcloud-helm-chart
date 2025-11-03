@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "qfieldcloud.fullname" . }}-static
+  labels:
+    {{- include "qfieldcloud.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.staticFiles.storage.size | default "2Gi" }}
+  {{- if .Values.staticFiles.storage.storageClass }}
+  storageClassName: {{ .Values.staticFiles.storage.storageClass }}
+  {{- end }}

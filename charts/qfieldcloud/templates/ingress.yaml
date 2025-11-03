@@ -1,6 +1,7 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "qfieldcloud.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
+{{- $domain := .Values.global.domain -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -15,7 +16,16 @@ spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- else if $domain }}
+  tls:
+    - hosts:
+        - {{ $domain | quote }}
+  {{- end }}
   rules:
+    {{- if .Values.ingress.hosts }}
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
@@ -39,5 +49,17 @@ spec:
                 port:
                   number: {{ $svcPort }}
           {{- end }}
+    {{- end }}
+    {{- else if $domain }}
+    - host: {{ $domain | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
     {{- end }}
 {{- end }} 

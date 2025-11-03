@@ -1,0 +1,68 @@
+{{- if and .Values.serviceAccount.create (eq .Values.django.settings.workerBackend "kubernetes") -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "qfieldcloud.fullname" . }}-worker
+  labels:
+    {{- include "qfieldcloud.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs", "jobs/status"]
+  verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "qfieldcloud.fullname" . }}-worker
+  labels:
+    {{- include "qfieldcloud.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "qfieldcloud.fullname" . }}-worker
+subjects:
+- kind: ServiceAccount
+  name: {{ include "qfieldcloud.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+---
+# Namespace-scoped Role for namespaced API calls (required for some k8s versions)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "qfieldcloud.fullname" . }}-worker-namespaced
+  labels:
+    {{- include "qfieldcloud.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs", "jobs/status"]
+  verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "qfieldcloud.fullname" . }}-worker-namespaced
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "qfieldcloud.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "qfieldcloud.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "qfieldcloud.fullname" . }}-worker-namespaced
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

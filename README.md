@@ -46,175 +46,210 @@ This Helm chart follows Kubernetes best practices and includes the following com
 
 The chart is designed to work with external databases (PostgreSQL and PostGIS) rather than deploying them as part of the chart, following the separation of concerns principle.
 
+## Domain Configuration
+
+This chart provides a convenient `global.domain` configuration that automatically sets up all domain-related settings:
+
+- **Ingress Configuration**: Automatically configures ingress hosts and TLS for the specified domain
+- **Environment Variables**: Sets `QFIELDCLOUD_HOST` across all deployments
+- **Security Settings**: Configures CSRF trusted origins and Django allowed hosts
+- **Template Logic**: Uses Helm templating for consistent domain handling
+
+### How it works
+
+When you set `global.domain`, the chart:
+
+1. **Generates ingress rules** for the domain with TLS enabled
+2. **Sets environment variables** like `QFIELDCLOUD_HOST` and `CSRF_TRUSTED_ORIGINS`
+3. **Configures nginx** server names and host validation
+4. **Maintains consistency** across all components
+
+### Fallback behavior
+
+If `global.domain` is not set, the chart falls back to:
+
+1. First host in `ingress.hosts[0].host` (if configured)
+2. `localhost` (default)
+
+This ensures backwards compatibility with existing configurations.
+
 ## Parameters
+
+### Global parameters
+
+| Name            | Description                                                                                                      | Value       |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- | ----------- |
+| `global.domain` | Domain name for the QFieldCloud instance. Automatically configures ingress hosts, TLS, and environment variables | `localhost` |
 
 ### Common parameters
 
-| Name                | Description                                        | Value           |
-|---------------------|----------------------------------------------------|-----------------|
-| `nameOverride`      | String to partially override qfieldcloud.fullname  | `""`            |
-| `fullnameOverride`  | String to fully override qfieldcloud.fullname      | `""`            |
-| `serviceAccount.create` | Specifies whether a ServiceAccount should be created | `true`        |
-| `serviceAccount.name` | The name of the ServiceAccount to use             | `""`            |
+| Name                    | Description                                          | Value  |
+| ----------------------- | ---------------------------------------------------- | ------ |
+| `nameOverride`          | String to partially override qfieldcloud.fullname    | `""`   |
+| `fullnameOverride`      | String to fully override qfieldcloud.fullname        | `""`   |
+| `serviceAccount.create` | Specifies whether a ServiceAccount should be created | `true` |
+| `serviceAccount.name`   | The name of the ServiceAccount to use                | `""`   |
 
 ### Django application parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `django.gunicorn.timeout`      | Gunicorn timeout in seconds                                                               | `120`           |
-| `django.gunicorn.maxRequests`  | Maximum number of requests a worker will process before restarting                        | `1000`          |
-| `django.gunicorn.workers`      | Number of Gunicorn workers                                                                | `4`             |
-| `django.gunicorn.threads`      | Number of threads per worker                                                              | `2`             |
-| `django.settings.debug`        | Enable debug mode                                                                         | `false`         |
-| `django.settings.environment`  | Environment (production, staging, development)                                            | `production`    |
-| `django.settings.secretKey`    | Django secret key (should be provided via secret)                                         | `""`            |
-| `django.settings.allowedHosts` | Comma-separated list of allowed hosts                                                     | `"*"`           |
-| `django.settings.settingsModule` | Django settings module                                                                    | `qfieldcloud.settings` |
-| `django.settings.accountEmailVerification` | Email verification setting                                                             | `mandatory`     |
-| `django.settings.useI18n`      | Enable internationalization                                                              | `true`          |
-| `django.settings.defaultLanguage` | Default language                                                                        | `en`            |
-| `django.settings.defaultTimeZone` | Default time zone                                                                      | `UTC`           |
-| `django.settings.authTokenExpirationHours` | Authentication token expiration in hours                                           | `24`            |
-| `django.settings.passwordLoginDisabled` | Disable password login                                                              | `false`         |
-| `django.settings.subscriptionModel` | Subscription model                                                                   | `free`          |
+| Name                                       | Description                                                        | Value                  |
+| ------------------------------------------ | ------------------------------------------------------------------ | ---------------------- |
+| `django.gunicorn.timeout`                  | Gunicorn timeout in seconds                                        | `120`                  |
+| `django.gunicorn.maxRequests`              | Maximum number of requests a worker will process before restarting | `1000`                 |
+| `django.gunicorn.workers`                  | Number of Gunicorn workers                                         | `4`                    |
+| `django.gunicorn.threads`                  | Number of threads per worker                                       | `2`                    |
+| `django.settings.debug`                    | Enable debug mode                                                  | `false`                |
+| `django.settings.environment`              | Environment (production, staging, development)                     | `production`           |
+| `django.settings.secretKey`                | Django secret key (should be provided via secret)                  | `""`                   |
+| `django.settings.allowedHosts`             | Comma-separated list of allowed hosts                              | `"*"`                  |
+| `django.settings.settingsModule`           | Django settings module                                             | `qfieldcloud.settings` |
+| `django.settings.accountEmailVerification` | Email verification setting                                         | `mandatory`            |
+| `django.settings.useI18n`                  | Enable internationalization                                        | `true`                 |
+| `django.settings.defaultLanguage`          | Default language                                                   | `en`                   |
+| `django.settings.defaultTimeZone`          | Default time zone                                                  | `UTC`                  |
+| `django.settings.authTokenExpirationHours` | Authentication token expiration in hours                           | `24`                   |
+| `django.settings.passwordLoginDisabled`    | Disable password login                                             | `false`                |
+| `django.settings.subscriptionModel`        | Subscription model                                                 | `free`                 |
 
 ### Sentry parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `django.sentry.dsn`            | Sentry DSN                                                                                | `""`            |
-| `django.sentry.release`        | Sentry release                                                                            | `""`            |
-| `django.sentry.sampleRate`     | Sentry sample rate                                                                        | `0.1`           |
+| Name                       | Description        | Value |
+| -------------------------- | ------------------ | ----- |
+| `django.sentry.dsn`        | Sentry DSN         | `""`  |
+| `django.sentry.release`    | Sentry release     | `""`  |
+| `django.sentry.sampleRate` | Sentry sample rate | `0.1` |
 
 ### Email parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `django.email.host`            | SMTP host                                                                                 | `""`            |
-| `django.email.useTls`          | Use TLS for SMTP                                                                          | `true`          |
-| `django.email.useSsl`          | Use SSL for SMTP                                                                          | `false`         |
-| `django.email.port`            | SMTP port                                                                                 | `587`           |
-| `django.email.hostUser`        | SMTP username                                                                             | `""`            |
-| `django.email.hostPassword`    | SMTP password (should be provided via secret)                                             | `""`            |
-| `django.email.defaultFromEmail` | Default from email address                                                              | `noreply@example.com` |
+| Name                            | Description                                   | Value                 |
+| ------------------------------- | --------------------------------------------- | --------------------- |
+| `django.email.host`             | SMTP host                                     | `""`                  |
+| `django.email.useTls`           | Use TLS for SMTP                              | `true`                |
+| `django.email.useSsl`           | Use SSL for SMTP                              | `false`               |
+| `django.email.port`             | SMTP port                                     | `587`                 |
+| `django.email.hostUser`         | SMTP username                                 | `""`                  |
+| `django.email.hostPassword`     | SMTP password (should be provided via secret) | `""`                  |
+| `django.email.defaultFromEmail` | Default from email address                    | `noreply@example.com` |
 
 ### Storage parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `django.storage.type`          | Storage type (local, s3, etc.)                                                            | `local`         |
-| `django.storage.accessKeyId`   | Storage access key ID                                                                     | `""`            |
-| `django.storage.secretAccessKey` | Storage secret access key (should be provided via secret)                              | `""`            |
-| `django.storage.bucketName`    | Storage bucket name                                                                       | `""`            |
-| `django.storage.regionName`    | Storage region name                                                                       | `""`            |
-| `django.storage.endpointUrl`   | Storage endpoint URL                                                                      | `""`            |
-| `django.storage.projectDefaultStorage` | Default storage for projects                                                      | `local`         |
+| Name                                   | Description                                                        | Value   |
+| -------------------------------------- | ------------------------------------------------------------------ | ------- |
+| `django.storage.type`                  | Storage type (local, s3, etc.)                                     | `local` |
+| `django.storage.accessKeyId`           | Storage access key ID (automatically used in secrets template)     | `""`    |
+| `django.storage.secretAccessKey`       | Storage secret access key (automatically used in secrets template) | `""`    |
+| `django.storage.bucketName`            | Storage bucket name                                                | `""`    |
+| `django.storage.regionName`            | Storage region name                                                | `""`    |
+| `django.storage.endpointUrl`           | Storage endpoint URL                                               | `""`    |
+| `django.storage.projectDefaultStorage` | Default storage for projects                                       | `local` |
+
+**Note**: Storage credentials (`accessKeyId` and `secretAccessKey`) are automatically handled by the secrets template. The storage configuration is dynamically generated without exposing secrets in ConfigMaps.
 
 ### Database parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `database.external`            | Use external database                                                                     | `true`          |
-| `database.host`                | Database host                                                                             | `""`            |
-| `database.port`                | Database port                                                                             | `5432`          |
-| `database.name`                | Database name                                                                             | `qfieldcloud`   |
-| `database.user`                | Database user                                                                             | `qfieldcloud`   |
-| `database.password`            | Database password (should be provided via secret)                                         | `""`            |
-| `database.sslMode`             | Database SSL mode                                                                         | `prefer`        |
+| Name                | Description                                       | Value         |
+| ------------------- | ------------------------------------------------- | ------------- |
+| `database.external` | Use external database                             | `true`        |
+| `database.host`     | Database host                                     | `""`          |
+| `database.port`     | Database port                                     | `5432`        |
+| `database.name`     | Database name                                     | `qfieldcloud` |
+| `database.user`     | Database user                                     | `qfieldcloud` |
+| `database.password` | Database password (should be provided via secret) | `""`          |
+| `database.sslMode`  | Database SSL mode                                 | `prefer`      |
 
 ### Geodatabase parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `geodatabase.external`         | Use external geodatabase                                                                  | `true`          |
-| `geodatabase.host`             | Geodatabase host                                                                          | `""`            |
-| `geodatabase.port`             | Geodatabase port                                                                          | `5432`          |
-| `geodatabase.name`             | Geodatabase name                                                                          | `qfieldcloud_geodb` |
-| `geodatabase.user`             | Geodatabase user                                                                          | `qfieldcloud`   |
-| `geodatabase.password`         | Geodatabase password (should be provided via secret)                                      | `""`            |
+| Name                   | Description                                          | Value               |
+| ---------------------- | ---------------------------------------------------- | ------------------- |
+| `geodatabase.external` | Use external geodatabase                             | `true`              |
+| `geodatabase.host`     | Geodatabase host                                     | `""`                |
+| `geodatabase.port`     | Geodatabase port                                     | `5432`              |
+| `geodatabase.name`     | Geodatabase name                                     | `qfieldcloud_geodb` |
+| `geodatabase.user`     | Geodatabase user                                     | `qfieldcloud`       |
+| `geodatabase.password` | Geodatabase password (should be provided via secret) | `""`                |
 
 ### QGIS parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `qgis.image.repository`        | QGIS image repository                                                                     | `opengisch/qfieldcloud-qgis` |
-| `qgis.image.tag`               | QGIS image tag                                                                            | `latest`        |
-| `qgis.image.pullPolicy`        | QGIS image pull policy                                                                    | `IfNotPresent`  |
-| `qgis.transformationGrids.downloadOnStartup` | Download transformation grids on startup                                           | `true`          |
-| `qgis.transformationGrids.sourceUrl` | URL to download transformation grids from                                          | `https://cdn.proj.org/` |
+| Name                                         | Description                               | Value                        |
+| -------------------------------------------- | ----------------------------------------- | ---------------------------- |
+| `qgis.image.repository`                      | QGIS image repository                     | `opengisch/qfieldcloud-qgis` |
+| `qgis.image.tag`                             | QGIS image tag                            | `latest`                     |
+| `qgis.image.pullPolicy`                      | QGIS image pull policy                    | `IfNotPresent`               |
+| `qgis.transformationGrids.downloadOnStartup` | Download transformation grids on startup  | `true`                       |
+| `qgis.transformationGrids.sourceUrl`         | URL to download transformation grids from | `https://cdn.proj.org/`      |
 
 ### Worker parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `worker.enabled`               | Enable worker deployment                                                                  | `true`          |
-| `worker.replicaCount`          | Number of worker replicas                                                                 | `1`             |
-| `worker.image.repository`      | Worker image repository                                                                   | `opengisch/qfieldcloud` |
-| `worker.image.tag`             | Worker image tag                                                                          | `latest`        |
-| `worker.image.pullPolicy`      | Worker image pull policy                                                                  | `IfNotPresent`  |
-| `worker.resources.limits`      | Worker resource limits                                                                    | `{}`            |
-| `worker.resources.requests`    | Worker resource requests                                                                  | `{}`            |
+| Name                        | Description               | Value                   |
+| --------------------------- | ------------------------- | ----------------------- |
+| `worker.enabled`            | Enable worker deployment  | `true`                  |
+| `worker.replicaCount`       | Number of worker replicas | `1`                     |
+| `worker.image.repository`   | Worker image repository   | `opengisch/qfieldcloud` |
+| `worker.image.tag`          | Worker image tag          | `latest`                |
+| `worker.image.pullPolicy`   | Worker image pull policy  | `IfNotPresent`          |
+| `worker.resources.limits`   | Worker resource limits    | `{}`                    |
+| `worker.resources.requests` | Worker resource requests  | `{}`                    |
 
 ### Memcached parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `memcached.enabled`            | Enable Memcached deployment                                                               | `true`          |
-| `memcached.image.repository`   | Memcached image repository                                                                | `memcached`     |
-| `memcached.image.tag`          | Memcached image tag                                                                       | `1`             |
-| `memcached.image.pullPolicy`   | Memcached image pull policy                                                               | `IfNotPresent`  |
-| `memcached.resources.limits`   | Memcached resource limits                                                                 | `{}`            |
-| `memcached.resources.requests` | Memcached resource requests                                                               | `{}`            |
+| Name                           | Description                 | Value          |
+| ------------------------------ | --------------------------- | -------------- |
+| `memcached.enabled`            | Enable Memcached deployment | `true`         |
+| `memcached.image.repository`   | Memcached image repository  | `memcached`    |
+| `memcached.image.tag`          | Memcached image tag         | `1`            |
+| `memcached.image.pullPolicy`   | Memcached image pull policy | `IfNotPresent` |
+| `memcached.resources.limits`   | Memcached resource limits   | `{}`           |
+| `memcached.resources.requests` | Memcached resource requests | `{}`           |
 
 ### Cron jobs parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `cronJobs.enabled`             | Enable cron jobs                                                                          | `true`          |
-| `cronJobs.image.repository`    | Cron jobs image repository                                                                | `opengisch/qfieldcloud` |
-| `cronJobs.image.tag`           | Cron jobs image tag                                                                       | `latest`        |
-| `cronJobs.image.pullPolicy`    | Cron jobs image pull policy                                                               | `IfNotPresent`  |
-| `cronJobs.schedule`            | Cron schedule                                                                             | `@every 1m`     |
-| `cronJobs.resources.limits`    | Cron jobs resource limits                                                                 | `{}`            |
-| `cronJobs.resources.requests`  | Cron jobs resource requests                                                               | `{}`            |
+| Name                          | Description                 | Value                   |
+| ----------------------------- | --------------------------- | ----------------------- |
+| `cronJobs.enabled`            | Enable cron jobs            | `true`                  |
+| `cronJobs.image.repository`   | Cron jobs image repository  | `opengisch/qfieldcloud` |
+| `cronJobs.image.tag`          | Cron jobs image tag         | `latest`                |
+| `cronJobs.image.pullPolicy`   | Cron jobs image pull policy | `IfNotPresent`          |
+| `cronJobs.schedule`           | Cron schedule               | `@every 1m`             |
+| `cronJobs.resources.limits`   | Cron jobs resource limits   | `{}`                    |
+| `cronJobs.resources.requests` | Cron jobs resource requests | `{}`                    |
 
 ### Exposure parameters
 
-| Name                               | Description                                                                               | Value           |
-|-----------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `service.type`                    | Kubernetes Service type                                                                   | `ClusterIP`     |
-| `service.port`                    | Kubernetes Service port                                                                   | `80`            |
-| `ingress.enabled`                 | Enable ingress record generation for QField Cloud                                         | `false`         |
-| `ingress.className`               | IngressClass resource name                                                                | `""`            |
-| `ingress.annotations`             | Additional custom annotations for QField Cloud ingress                                    | `{}`            |
-| `ingress.hosts`                   | The list of hosts to be covered with this ingress record                                 | `[]`            |
-| `ingress.tls`                     | TLS configuration for ingress                                                            | `[]`            |
+| Name                  | Description                                                                                 | Value       |
+| --------------------- | ------------------------------------------------------------------------------------------- | ----------- |
+| `service.type`        | Kubernetes Service type                                                                     | `ClusterIP` |
+| `service.port`        | Kubernetes Service port                                                                     | `80`        |
+| `ingress.enabled`     | Enable ingress record generation for QField Cloud                                           | `false`     |
+| `ingress.className`   | IngressClass resource name                                                                  | `""`        |
+| `ingress.annotations` | Additional custom annotations for QField Cloud ingress                                      | `{}`        |
+| `ingress.hosts`       | The list of hosts to be covered with this ingress record (optional if global.domain is set) | `[]`        |
+| `ingress.tls`         | TLS configuration for ingress (optional if global.domain is set)                            | `[]`        |
 
 ### Resource parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `resources.limits`             | The resources limits for the QField Cloud container                                       | `{}`            |
-| `resources.requests`           | The requested resources for the QField Cloud container                                    | `{}`            |
+| Name                 | Description                                            | Value |
+| -------------------- | ------------------------------------------------------ | ----- |
+| `resources.limits`   | The resources limits for the QField Cloud container    | `{}`  |
+| `resources.requests` | The requested resources for the QField Cloud container | `{}`  |
 
 ### Pod parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `nodeSelector`                 | Node labels for pod assignment                                                            | `{}`            |
-| `tolerations`                  | Tolerations for pod assignment                                                            | `[]`            |
-| `affinity`                     | Affinity for pod assignment                                                               | `{}`            |
+| Name           | Description                    | Value |
+| -------------- | ------------------------------ | ----- |
+| `nodeSelector` | Node labels for pod assignment | `{}`  |
+| `tolerations`  | Tolerations for pod assignment | `[]`  |
+| `affinity`     | Affinity for pod assignment    | `{}`  |
 
 ### Persistence parameters
 
-| Name                           | Description                                                                               | Value           |
-|--------------------------------|-------------------------------------------------------------------------------------------|-----------------|
-| `persistence.static.enabled`   | Enable persistence for static files                                                       | `true`          |
-| `persistence.static.size`      | Size of persistent volume for static files                                                | `1Gi`           |
-| `persistence.media.enabled`    | Enable persistence for media files                                                        | `true`          |
-| `persistence.media.size`       | Size of persistent volume for media files                                                 | `10Gi`          |
-| `persistence.transformationGrids.enabled` | Enable persistence for transformation grids                                        | `true`          |
-| `persistence.transformationGrids.size` | Size of persistent volume for transformation grids                                   | `1Gi`           |
+| Name                                      | Description                                        | Value  |
+| ----------------------------------------- | -------------------------------------------------- | ------ |
+| `persistence.static.enabled`              | Enable persistence for static files                | `true` |
+| `persistence.static.size`                 | Size of persistent volume for static files         | `1Gi`  |
+| `persistence.media.enabled`               | Enable persistence for media files                 | `true` |
+| `persistence.media.size`                  | Size of persistent volume for media files          | `10Gi` |
+| `persistence.transformationGrids.enabled` | Enable persistence for transformation grids        | `true` |
+| `persistence.transformationGrids.size`    | Size of persistent volume for transformation grids | `1Gi`  |
 
 ## Configuration and installation
 
@@ -229,6 +264,24 @@ helm install qfieldcloud qfieldcloud/qfieldcloud
 ```bash
 helm install qfieldcloud qfieldcloud/qfieldcloud --set django.settings.environment=production
 ```
+
+### Installation with custom domain
+
+The simplest way to configure a custom domain for your QFieldCloud instance:
+
+```bash
+helm install qfieldcloud qfieldcloud/qfieldcloud \
+  --set global.domain=your-domain.com \
+  --set ingress.enabled=true \
+  --set ingress.className=traefik
+```
+
+This automatically configures:
+
+- Ingress hosts and TLS for `your-domain.com`
+- All `QFIELDCLOUD_HOST` environment variables
+- CSRF trusted origins for `https://your-domain.com`
+- Django allowed hosts including the domain
 
 ### Installation with external databases
 
@@ -248,6 +301,17 @@ helm install qfieldcloud qfieldcloud/qfieldcloud \
 
 ### Installation with ingress
 
+#### Option 1: Using global.domain (recommended)
+
+```bash
+helm install qfieldcloud qfieldcloud/qfieldcloud \
+  --set global.domain=qfieldcloud.example.com \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx
+```
+
+#### Option 2: Manual ingress configuration
+
 ```bash
 helm install qfieldcloud qfieldcloud/qfieldcloud \
   --set ingress.enabled=true \
@@ -258,6 +322,8 @@ helm install qfieldcloud qfieldcloud/qfieldcloud \
   --set ingress.tls[0].secretName=qfieldcloud-tls \
   --set ingress.tls[0].hosts[0]=qfieldcloud.example.com
 ```
+
+**Note**: Option 1 is recommended as it automatically configures all domain-related settings consistently.
 
 ## Development
 
@@ -270,6 +336,7 @@ To package the chart and update the repository index:
 ```
 
 This will:
+
 1. Package the chart into a .tgz file
 2. Update the repository index
 3. Create/update the index.yaml file
@@ -278,4 +345,4 @@ This will:
 
 Copyright (c) 2024 QField Cloud Team
 
-Licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+Licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
